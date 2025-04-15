@@ -1,5 +1,39 @@
-# library_management_task
-Basic Library Management System 
+# Library Management System – Flask + PostgreSQL + Docker
+Dynamic, database-driven library management system with support for book borrowing, returning, and catalog browsing. I used Flask, PostgreSQL, and containerized using Docker for setup and deployment.
+
+# features
+
+- view and manage a catalog of books, authors, genres, and publishers
+- borrow and return books (with persistent state)
+- prevents multiple users from borrowing the same book
+- postgreSQL database used instead of static XML files
+- fully containerized with Docker + Docker Compose
+
+---
+
+
+### steps to run with docker:
+1. Make sure [Docker Desktop](https://www.docker.com/products/docker-desktop) is installed and running.
+2. Open terminal in the project folder.
+3. Start the app:
+```bash
+docker-compose up --build
+```
+4. Visit in browser:
+```
+http://localhost:5000
+```
+5. To stop the app:
+```bash
+docker-compose down
+```
+6. To reset the database:
+```bash
+docker-compose down -v
+```
+
+---
+
 
 ### Steps
 1. Open cmd/terminal and clone the repository (ensure git is installed or use GutHub Desktop)

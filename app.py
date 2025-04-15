@@ -1,11 +1,57 @@
 from flask import Flask, render_template, jsonify, request
+from flask_sqlalchemy import SQLAlchemy
 import configparser
 import requests
 import logging
 from flask_cors import CORS
 
 app = Flask(__name__, static_url_path='/static', static_folder='static')
+# database configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:password@db:5432/library'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
 CORS(app)
+
+# database models
+
+class Author(db.Model):
+    __tablename__ = 'Author'
+    AuthorID = db.Column(db.Integer, primary_key=True)
+    Name = db.Column(db.String(255), nullable=False)
+
+class Genre(db.Model):
+    __tablename__ = 'Genre'
+    GenreID = db.Column(db.Integer, primary_key=True)
+    Name = db.Column(db.String(255), nullable=False)
+
+class Publisher(db.Model):
+    __tablename__ = 'Publisher'
+    PublisherID = db.Column(db.Integer, primary_key=True)
+    Name = db.Column(db.String(255), nullable=False)
+
+class Book(db.Model):
+    __tablename__ = 'Book'
+    BookID = db.Column(db.Integer, primary_key=True)
+    Title = db.Column(db.String(255), nullable=False)
+    State = db.Column(db.String(50))
+    AuthorID = db.Column(db.Integer, db.ForeignKey('Author.AuthorID'), nullable=False)
+    GenreID = db.Column(db.Integer, db.ForeignKey('Genre.GenreID'), nullable=False)
+    PublisherID = db.Column(db.Integer, db.ForeignKey('Publisher.PublisherID'), nullable=False)
+
+class UserAccount(db.Model):
+    __tablename__ = 'UserAccount'
+    UserID = db.Column(db.Integer, primary_key=True)
+    Name = db.Column(db.String(255), nullable=False)
+
+class BorrowTransaction(db.Model):
+    __tablename__ = 'BorrowTransaction'
+    TransactionID = db.Column(db.Integer, primary_key=True)
+    BookID = db.Column(db.Integer, db.ForeignKey('Book.BookID'), nullable=False)
+    UserID = db.Column(db.Integer, db.ForeignKey('UserAccount.UserID'), nullable=False)
+    BorrowDate = db.Column(db.Date, nullable=False)
+    ReturnDate = db.Column(db.Date)
+
 
 # Configure logging to DEBUG level for detailed logs
 logging.basicConfig(
@@ -34,6 +80,13 @@ except Exception as e:
 @app.route('/')
 def home():
     return render_template('index.html')
+
+#testing route
+@app.route('/api/authors', methods=['GET'])
+def get_authors():
+    authors = Author.query.all()
+    return jsonify([{'id': a.AuthorID, 'name': a.Name} for a in authors])
+
 
 # Route to serve viewer.html
 @app.route('/viewer.html')
@@ -120,4 +173,4 @@ def get_description():
         return jsonify({'error': 'An unexpected error occurred', 'message': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0")

@@ -3,16 +3,16 @@
     <Publisher id="p1">
         <Name>Penguin Books</Name>
     </Publisher>
-    <Publisher id="p2">
+    <Publisher id="2">
         <Name>J.B. Lippincott &amp; Co.</Name>
     </Publisher>
-    <Publisher id="p3">
+    <Publisher id="3">
         <Name>T. Egerton</Name>
     </Publisher>
-    <Publisher id="p4">
+    <Publisher id="4">
         <Name>Secker and Warburg</Name>
     </Publisher>
-    <Publisher id="p5">
+    <Publisher id="5">
         <Name>Penguin Life</Name>
     </Publisher>
     <!-- Add more publishers as needed -->

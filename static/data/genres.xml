@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Genres xmlns="http://localhost:8000/library/genres">
-    <Genre id="g1">
+    <Genre id="1">
         <Name>Fiction</Name>
     </Genre>
-    <Genre id="g2">
+    <Genre id="2">
         <Name>Non-Fiction</Name>
     </Genre>
-    <Genre id="g3">
+    <Genre id="3">
         <Name>Romance</Name>
     </Genre>
-    <Genre id="g4">
+    <Genre id="4">
         <Name>Satire</Name>
     </Genre>
-    <Genre id="g5">
+    <Genre id="5">
         <Name>Self Help</Name>
     </Genre>
     <!-- Add more genres as needed -->

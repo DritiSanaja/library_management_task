@@ -9,6 +9,8 @@ app = Flask(__name__, static_url_path='/static', static_folder='static')
 # database configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:password@db:5432/library'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ECHO'] = True  # Enable query logging
+
 db = SQLAlchemy(app)
 
 CORS(app)
@@ -16,41 +18,42 @@ CORS(app)
 # database models
 
 class Author(db.Model):
-    __tablename__ = 'Author'
-    AuthorID = db.Column(db.Integer, primary_key=True)
-    Name = db.Column(db.String(255), nullable=False)
+    __tablename__ = 'author'
+    AuthorID = db.Column('authorid', db.Integer, primary_key=True)
+    Name = db.Column('name', db.String(255), nullable=False)
 
 class Genre(db.Model):
-    __tablename__ = 'Genre'
-    GenreID = db.Column(db.Integer, primary_key=True)
-    Name = db.Column(db.String(255), nullable=False)
+    __tablename__ = 'genre'
+    GenreID = db.Column('genreid', db.Integer, primary_key=True)
+    Name = db.Column('name', db.String(255), nullable=False)
 
 class Publisher(db.Model):
-    __tablename__ = 'Publisher'
-    PublisherID = db.Column(db.Integer, primary_key=True)
-    Name = db.Column(db.String(255), nullable=False)
+    __tablename__ = 'publisher'
+    PublisherID = db.Column('publisherid', db.Integer, primary_key=True)
+    Name = db.Column('name', db.String(255), nullable=False)
 
 class Book(db.Model):
-    __tablename__ = 'Book'
-    BookID = db.Column(db.Integer, primary_key=True)
-    Title = db.Column(db.String(255), nullable=False)
-    State = db.Column(db.String(50))
-    AuthorID = db.Column(db.Integer, db.ForeignKey('Author.AuthorID'), nullable=False)
-    GenreID = db.Column(db.Integer, db.ForeignKey('Genre.GenreID'), nullable=False)
-    PublisherID = db.Column(db.Integer, db.ForeignKey('Publisher.PublisherID'), nullable=False)
+    __tablename__ = 'book'
+    BookID = db.Column('bookid', db.Integer, primary_key=True)
+    Title = db.Column('title', db.String(255), nullable=False)
+    State = db.Column('state', db.String(50))
+    AuthorID = db.Column('authorid', db.Integer, db.ForeignKey('author.authorid'), nullable=False)
+    GenreID = db.Column('genreid', db.Integer, db.ForeignKey('genre.genreid'), nullable=False)
+    PublisherID = db.Column('publisherid', db.Integer, db.ForeignKey('publisher.publisherid'), nullable=False)
 
 class UserAccount(db.Model):
-    __tablename__ = 'UserAccount'
-    UserID = db.Column(db.Integer, primary_key=True)
-    Name = db.Column(db.String(255), nullable=False)
+    __tablename__ = 'useraccount'
+    UserID = db.Column('userid', db.Integer, primary_key=True)
+    Name = db.Column('name', db.String(255), nullable=False)
 
 class BorrowTransaction(db.Model):
-    __tablename__ = 'BorrowTransaction'
-    TransactionID = db.Column(db.Integer, primary_key=True)
-    BookID = db.Column(db.Integer, db.ForeignKey('Book.BookID'), nullable=False)
-    UserID = db.Column(db.Integer, db.ForeignKey('UserAccount.UserID'), nullable=False)
-    BorrowDate = db.Column(db.Date, nullable=False)
-    ReturnDate = db.Column(db.Date)
+    __tablename__ = 'borrowtransaction'
+    TransactionID = db.Column('transactionid', db.Integer, primary_key=True)
+    BookID = db.Column('bookid', db.Integer, db.ForeignKey('book.bookid'), nullable=False)
+    UserID = db.Column('userid', db.Integer, db.ForeignKey('useraccount.userid'), nullable=False)
+    BorrowDate = db.Column('borrowdate', db.Date, nullable=False)
+    ReturnDate = db.Column('returndate', db.Date)
+
 
 
 # Configure logging to DEBUG level for detailed logs
@@ -92,6 +95,42 @@ def get_authors():
 @app.route('/viewer.html')
 def viewer():
     return render_template('viewer.html')
+
+
+def get_latest_borrower_name(book_id):
+    tx = BorrowTransaction.query.filter_by(BookID=book_id).order_by(BorrowTransaction.BorrowDate.desc()).first()
+    if tx and tx.UserID:
+        user = UserAccount.query.get(tx.UserID)
+        return user.Name if user else 'Unknown'
+    return ''
+
+def get_latest_borrow_date(book_id):
+    tx = BorrowTransaction.query.filter_by(BookID=book_id).order_by(BorrowTransaction.BorrowDate.desc()).first()
+    return tx.BorrowDate.strftime('%Y-%m-%d') if tx and tx.BorrowDate else ''
+
+def get_latest_return_date(book_id):
+    tx = BorrowTransaction.query.filter_by(BookID=book_id).order_by(BorrowTransaction.BorrowDate.desc()).first()
+    return tx.ReturnDate.strftime('%Y-%m-%d') if tx and tx.ReturnDate else ''
+
+
+@app.route('/api/books', methods=['GET'])
+def get_books():
+    books = Book.query.all()
+    return jsonify([
+        {
+            'id': book.BookID,
+            'title': book.Title,
+            'state': book.State,
+            'author': Author.query.get(book.AuthorID).Name if book.AuthorID else 'Unknown',
+            'genre': Genre.query.get(book.GenreID).Name if book.GenreID else 'Unknown',
+            'publisher': Publisher.query.get(book.PublisherID).Name if book.PublisherID else 'Unknown',
+            'borrower': get_latest_borrower_name(book.BookID),
+            'borrowDate': get_latest_borrow_date(book.BookID),
+            'returnDate': get_latest_return_date(book.BookID)
+        }
+        for book in books
+    ])
+
 
 # API route to fetch description from Gemini API
 @app.route('/api/description', methods=['GET'])
@@ -171,6 +210,77 @@ def get_description():
     except Exception as e:
         logging.exception(f"Unexpected error: {e}")
         return jsonify({'error': 'An unexpected error occurred', 'message': str(e)}), 500
+
+
+
+
+@app.route('/api/book/<int:book_id>', methods=['POST'])
+def borrow_book(book_id):
+    data = request.get_json()
+    borrower_name = data.get('borrowerName')
+    borrow_date = data.get('borrowDate')
+
+    # Fetch the book from the database
+    book = Book.query.get(book_id)
+    if not book:
+        return jsonify({'success': False, 'message': 'Book not found'}), 404
+
+    # Check if the book is already borrowed
+    if book.State == 'Borrowed':
+        return jsonify({'success': False, 'message': 'Book already borrowed'}), 400
+
+    # Update the book state to "Borrowed"
+    book.State = 'Borrowed'
+
+    # Create a new borrow transaction
+    transaction = BorrowTransaction(
+        BookID=book_id,
+        UserID=1,  
+        BorrowDate=borrow_date
+    )
+
+    try:
+        # Add the transaction to the session
+        db.session.add(transaction)
+        
+        # Commit the transaction and update the book state
+        db.session.commit()
+
+        # Return a success response
+        return jsonify({'success': True, 'message': 'Book borrowed successfully'})
+    
+    except Exception as e:
+        # Rollback the session if there is an error
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+
+
+
+
+@app.route('/api/return/<int:book_id>', methods=['POST'])
+def return_book(book_id):
+    data = request.get_json()  # This is where you're expecting the JSON body
+    return_date = data.get('returnDate')
+
+    # Debugging: Print the data to see if it's correctly received
+    print(f"Received return request for Book ID {book_id} with returnDate: {return_date}")
+
+    # Fetch the book and check its status
+    book = Book.query.get(book_id)
+    if not book or book.State != 'Borrowed':
+        return jsonify({'success': False, 'message': 'Book is not borrowed'}), 400
+
+    book.State = 'Present'
+    db.session.commit()
+
+    transaction = BorrowTransaction.query.filter_by(BookID=book_id).order_by(BorrowTransaction.BorrowDate.desc()).first()
+    if transaction:
+        transaction.ReturnDate = return_date
+        db.session.commit()
+
+    return jsonify({'success': True, 'message': 'Book returned successfully'})
+
+
 
 if __name__ == '__main__':
     app.run(debug=True, host="0.0.0.0")

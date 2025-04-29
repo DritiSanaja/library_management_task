@@ -86,7 +86,7 @@ To migrate data from PostgreSQL to Neo4j:
      - `(:Book)-[:PUBLISHED_BY]->(:Publisher)`
      - `(:User)-[:BORROWED {BorrowDate, ReturnDate}]->(:Book)`
 
-⚠️ If `ReturnDate` is null, it will be excluded from the relationship to avoid errors.
+ If `ReturnDate` is null, it will be excluded from the relationship to avoid errors.
 
 ---
 

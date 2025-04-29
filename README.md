@@ -120,7 +120,3 @@ library_management_task/
 ```
 
 ---
-
-## 📄 License
-
-[MIT](LICENSE)

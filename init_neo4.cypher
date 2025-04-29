@@ -1,0 +1,6 @@
+// Create constraints
+CREATE CONSTRAINT book_id_unique IF NOT EXISTS FOR (b:Book) REQUIRE b.BookID IS UNIQUE;
+CREATE CONSTRAINT author_id_unique IF NOT EXISTS FOR (a:Author) REQUIRE a.AuthorID IS UNIQUE;
+CREATE CONSTRAINT genre_id_unique IF NOT EXISTS FOR (g:Genre) REQUIRE g.GenreID IS UNIQUE;
+CREATE CONSTRAINT publisher_id_unique IF NOT EXISTS FOR (p:Publisher) REQUIRE p.PublisherID IS UNIQUE;
+CREATE CONSTRAINT user_id_unique IF NOT EXISTS FOR (u:User) REQUIRE u.UserID IS UNIQUE;

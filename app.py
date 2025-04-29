@@ -4,13 +4,17 @@ import configparser
 import requests
 import logging
 from flask_cors import CORS
+from neo4j import GraphDatabase
+import os
+db_host = os.getenv("DB_HOST", "localhost")
+db_pass = os.getenv("DB_PASSWORD", "password")
+
 
 app = Flask(__name__, static_url_path='/static', static_folder='static')
 # database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:password@db:5432/library'
+app.config['SQLALCHEMY_DATABASE_URI'] = f'postgresql://postgres:{db_pass}@db:5432/library'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_ECHO'] = True  # Enable query logging
-
+app.config['SQLALCHEMY_ECHO'] = True 
 db = SQLAlchemy(app)
 
 CORS(app)
@@ -54,7 +58,11 @@ class BorrowTransaction(db.Model):
     BorrowDate = db.Column('borrowdate', db.Date, nullable=False)
     ReturnDate = db.Column('returndate', db.Date)
 
-
+#connect to neo4j
+neo4j_driver = GraphDatabase.driver(
+    "bolt://neo4j:7687", 
+    auth=("neo4j", "password")
+)
 
 # Configure logging to DEBUG level for detailed logs
 logging.basicConfig(
@@ -96,7 +104,7 @@ def get_authors():
 def viewer():
     return render_template('viewer.html')
 
-
+# too see who borrowed the book
 def get_latest_borrower_name(book_id):
     tx = BorrowTransaction.query.filter_by(BookID=book_id).order_by(BorrowTransaction.BorrowDate.desc()).first()
     if tx and tx.UserID:
@@ -104,10 +112,12 @@ def get_latest_borrower_name(book_id):
         return user.Name if user else 'Unknown'
     return ''
 
+#find the book last trasnaciton and show in ui
 def get_latest_borrow_date(book_id):
     tx = BorrowTransaction.query.filter_by(BookID=book_id).order_by(BorrowTransaction.BorrowDate.desc()).first()
     return tx.BorrowDate.strftime('%Y-%m-%d') if tx and tx.BorrowDate else ''
 
+#display the return date
 def get_latest_return_date(book_id):
     tx = BorrowTransaction.query.filter_by(BookID=book_id).order_by(BorrowTransaction.BorrowDate.desc()).first()
     return tx.ReturnDate.strftime('%Y-%m-%d') if tx and tx.ReturnDate else ''
@@ -211,7 +221,17 @@ def get_description():
         logging.exception(f"Unexpected error: {e}")
         return jsonify({'error': 'An unexpected error occurred', 'message': str(e)}), 500
 
-
+@app.route('/api/graph/books', methods=['GET'])
+def get_books_graph():
+    with neo4j_driver.session() as session:
+        result = session.run("""
+            MATCH (b:Book)-[:WRITTEN_BY]->(a:Author),
+                  (b)-[:BELONGS_TO]->(g:Genre),
+                  (b)-[:PUBLISHED_BY]->(p:Publisher)
+            RETURN b.BookID as id, b.Title as title, a.Name as author, g.Name as genre, p.Name as publisher
+        """)
+        books = [record.data() for record in result]
+    return jsonify(books)
 
 
 @app.route('/api/book/<int:book_id>', methods=['POST'])

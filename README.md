@@ -1,10 +1,10 @@
-# 📚 Library Management System – Flask + PostgreSQL + Neo4j + Docker
+# Library Management System – Flask + PostgreSQL + Neo4j + Docker
 
 A dynamic, database-driven library management system built with **Flask**, backed by a **PostgreSQL** relational database and now extended to **Neo4j** for advanced graph-based data querying. Fully containerized using Docker for easy setup and deployment.
 
 ---
 
-## 🔑 Features
+## Features
 
 - View and manage a catalog of books, authors, genres, and publishers
 - Borrow and return books with persistent state tracking
@@ -15,7 +15,7 @@ A dynamic, database-driven library management system built with **Flask**, backe
 
 ---
 
-## 🐳 Running with Docker
+## Running with Docker
 
 1. Make sure [Docker Desktop](https://www.docker.com/products/docker-desktop) is installed and running.
 2. Open terminal in the project folder.
@@ -38,7 +38,7 @@ A dynamic, database-driven library management system built with **Flask**, backe
 
 ---
 
-## 💻 Manual Setup (Without Docker)
+## Manual Setup (Without Docker)
 
 1. Clone the repository:
    ```bash
@@ -69,7 +69,7 @@ A dynamic, database-driven library management system built with **Flask**, backe
 
 ---
 
-## 🔁 Data Migration to Neo4j
+## Data Migration to Neo4j
 
 To migrate data from PostgreSQL to Neo4j:
 
@@ -90,7 +90,7 @@ To migrate data from PostgreSQL to Neo4j:
 
 ---
 
-## 🧠 Sample Neo4j Queries
+## Sample Neo4j Queries
 
 ```cypher
 // Find all books by a specific author
@@ -104,7 +104,7 @@ RETURN u.Name, b.Title;
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 library_management_task/
